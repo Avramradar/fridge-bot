@@ -184,6 +184,7 @@ async function setupWebhook(url, env) {
 }
 
 async function handleUpdate(update, env) {
+  console.log(JSON.stringify(update, null, 2));
   /*
    * Сохраняем новую или отредактированную
    * публикацию канала во временной памяти.
