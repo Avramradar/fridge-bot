@@ -1,3 +1,11 @@
 name = "fridge-bot"
 main = "src/index.js"
 compatibility_date = "2026-07-22"
+
+[[durable_objects.bindings]]
+name = "RECIPE_STORE"
+class_name = "RecipeStore"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RecipeStore"]
