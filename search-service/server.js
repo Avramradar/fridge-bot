@@ -3,6 +3,7 @@ import cors from "cors";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import pLimit from "p-limit";
+import { searchRussianFood } from "./sources/russianfood.js";
 
 const app = express();
 
