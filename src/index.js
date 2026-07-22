@@ -1,63 +1,361 @@
 const TELEGRAM_API = "https://api.telegram.org";
-const MEALDB_API = "https://www.themealdb.com/api/json/v1/1";
 
-const INGREDIENT_TRANSLATIONS = {
-  фарш: "minced beef",
-  говядина: "beef",
-  свинина: "pork",
-  курица: "chicken",
-  индейка: "turkey",
-  рыба: "fish",
-  лосось: "salmon",
-  тунец: "tuna",
-  картошка: "potato",
-  картофель: "potato",
-  помидор: "tomato",
-  помидоры: "tomato",
-  томат: "tomato",
-  лук: "onion",
-  чеснок: "garlic",
-  морковь: "carrot",
-  капуста: "cabbage",
-  грибы: "mushrooms",
-  гриб: "mushrooms",
-  сыр: "cheese",
-  яйцо: "egg",
-  яйца: "egg",
-  молоко: "milk",
-  сливки: "cream",
-  сметана: "sour cream",
-  масло: "butter",
-  рис: "rice",
-  макароны: "pasta",
-  спагетти: "spaghetti",
-  хлеб: "bread",
-  фасоль: "beans",
-  горох: "peas",
-  кукуруза: "corn",
-  перец: "pepper",
-  кабачок: "courgettes",
-  баклажан: "aubergine",
-  огурец: "cucumber",
-  яблоко: "apple",
-  банан: "banana"
-};
+const RECIPES = [
+  {
+    id: "potato_meat_casserole",
+    title: "Картофельная запеканка с фаршем",
+    time: "55 минут",
+    portions: "4 порции",
+    ingredients: [
+      "картофель",
+      "фарш",
+      "лук",
+      "сыр",
+      "помидоры"
+    ],
+    optional: ["сметана", "чеснок"],
+    steps: [
+      "Картофель очистите и нарежьте тонкими кружочками.",
+      "Лук измельчите и обжарьте вместе с фаршем 8–10 минут.",
+      "Выложите картофель, фарш и помидоры слоями.",
+      "Посыпьте тёртым сыром.",
+      "Запекайте при 190 °C около 40 минут."
+    ]
+  },
+  {
+    id: "fried_potatoes_meat",
+    title: "Жареная картошка с фаршем",
+    time: "35 минут",
+    portions: "3 порции",
+    ingredients: ["картофель", "фарш", "лук"],
+    optional: ["чеснок", "зелень"],
+    steps: [
+      "Картофель нарежьте небольшими кусочками.",
+      "Обжарьте фарш с луком.",
+      "Добавьте картофель и перемешайте.",
+      "Готовьте под крышкой около 20 минут.",
+      "Добавьте соль, специи и зелень."
+    ]
+  },
+  {
+    id: "meatballs",
+    title: "Домашние котлеты",
+    time: "40 минут",
+    portions: "4 порции",
+    ingredients: ["фарш", "лук", "яйца", "хлеб"],
+    optional: ["молоко", "чеснок"],
+    steps: [
+      "Хлеб замочите в молоке или воде.",
+      "Смешайте фарш, лук, яйцо и отжатый хлеб.",
+      "Добавьте соль и специи.",
+      "Сформируйте котлеты.",
+      "Обжарьте с двух сторон до готовности."
+    ]
+  },
+  {
+    id: "pasta_meat",
+    title: "Макароны с фаршем по-домашнему",
+    time: "30 минут",
+    portions: "4 порции",
+    ingredients: ["макароны", "фарш", "лук"],
+    optional: ["помидоры", "сыр", "чеснок"],
+    steps: [
+      "Макароны отварите до готовности.",
+      "Фарш обжарьте с измельчённым луком.",
+      "При наличии добавьте помидоры или томатную пасту.",
+      "Смешайте фарш с макаронами.",
+      "Посыпьте сыром."
+    ]
+  },
+  {
+    id: "chicken_potatoes",
+    title: "Курица с картофелем в духовке",
+    time: "60 минут",
+    portions: "4 порции",
+    ingredients: ["курица", "картофель", "лук"],
+    optional: ["чеснок", "сметана", "сыр"],
+    steps: [
+      "Картофель нарежьте крупными кусочками.",
+      "Курицу натрите солью и специями.",
+      "Добавьте нарезанный лук.",
+      "Выложите всё в форму.",
+      "Запекайте при 190 °C около 50 минут."
+    ]
+  },
+  {
+    id: "chicken_rice",
+    title: "Рис с курицей",
+    time: "45 минут",
+    portions: "4 порции",
+    ingredients: ["курица", "рис", "лук", "морковь"],
+    optional: ["чеснок"],
+    steps: [
+      "Курицу нарежьте и слегка обжарьте.",
+      "Добавьте лук и морковь.",
+      "Всыпьте промытый рис.",
+      "Добавьте воду в пропорции примерно 1 к 2.",
+      "Готовьте под крышкой до мягкости риса."
+    ]
+  },
+  {
+    id: "chicken_pasta",
+    title: "Макароны с курицей и сыром",
+    time: "30 минут",
+    portions: "3 порции",
+    ingredients: ["курица", "макароны", "сыр"],
+    optional: ["сливки", "лук", "чеснок"],
+    steps: [
+      "Макароны отварите.",
+      "Курицу нарежьте и обжарьте.",
+      "Добавьте сливки или немного воды.",
+      "Смешайте с макаронами.",
+      "Добавьте тёртый сыр."
+    ]
+  },
+  {
+    id: "omelette_cheese",
+    title: "Омлет с сыром",
+    time: "15 минут",
+    portions: "2 порции",
+    ingredients: ["яйца", "сыр"],
+    optional: ["молоко", "помидоры", "зелень"],
+    steps: [
+      "Яйца взбейте с солью.",
+      "При наличии добавьте немного молока.",
+      "Вылейте смесь на разогретую сковороду.",
+      "Добавьте сыр и помидоры.",
+      "Готовьте под крышкой 5–7 минут."
+    ]
+  },
+  {
+    id: "tomato_eggs",
+    title: "Яичница с помидорами",
+    time: "15 минут",
+    portions: "2 порции",
+    ingredients: ["яйца", "помидоры"],
+    optional: ["лук", "сыр", "зелень"],
+    steps: [
+      "Помидоры нарежьте и обжарьте 3–4 минуты.",
+      "При наличии добавьте лук.",
+      "Разбейте яйца на сковороду.",
+      "Посолите и добавьте специи.",
+      "Готовьте до желаемой степени прожарки."
+    ]
+  },
+  {
+    id: "hot_sandwiches",
+    title: "Горячие бутерброды с сыром",
+    time: "15 минут",
+    portions: "2 порции",
+    ingredients: ["хлеб", "сыр"],
+    optional: ["колбаса", "помидоры", "ветчина"],
+    steps: [
+      "Хлеб выложите на противень.",
+      "Добавьте колбасу, ветчину или помидоры.",
+      "Посыпьте тёртым сыром.",
+      "Запекайте при 190 °C около 8–10 минут."
+    ]
+  },
+  {
+    id: "potato_pancakes",
+    title: "Картофельные драники",
+    time: "35 минут",
+    portions: "3 порции",
+    ingredients: ["картофель", "лук", "яйца", "мука"],
+    optional: ["сметана", "чеснок"],
+    steps: [
+      "Картофель и лук натрите на мелкой тёрке.",
+      "Добавьте яйцо и муку.",
+      "Посолите и перемешайте.",
+      "Выкладывайте массу ложкой на сковороду.",
+      "Обжарьте с двух сторон."
+    ]
+  },
+  {
+    id: "mashed_potatoes",
+    title: "Картофельное пюре",
+    time: "35 минут",
+    portions: "4 порции",
+    ingredients: ["картофель", "молоко", "масло"],
+    optional: ["сыр", "зелень"],
+    steps: [
+      "Картофель очистите и отварите.",
+      "Слейте воду.",
+      "Добавьте тёплое молоко и масло.",
+      "Разомните до однородности.",
+      "Добавьте соль."
+    ]
+  },
+  {
+    id: "vegetable_stew",
+    title: "Овощное рагу",
+    time: "45 минут",
+    portions: "4 порции",
+    ingredients: [
+      "картофель",
+      "кабачок",
+      "помидоры",
+      "лук",
+      "морковь"
+    ],
+    optional: ["перец", "чеснок", "капуста"],
+    steps: [
+      "Все овощи нарежьте кубиками.",
+      "Обжарьте лук и морковь.",
+      "Добавьте картофель и кабачок.",
+      "Добавьте помидоры и немного воды.",
+      "Тушите под крышкой около 30 минут."
+    ]
+  },
+  {
+    id: "rice_vegetables",
+    title: "Рис с овощами",
+    time: "35 минут",
+    portions: "3 порции",
+    ingredients: ["рис", "лук", "морковь"],
+    optional: ["перец", "кукуруза", "горошек"],
+    steps: [
+      "Рис промойте.",
+      "Лук и морковь обжарьте.",
+      "Добавьте остальные овощи.",
+      "Всыпьте рис и добавьте воду.",
+      "Готовьте под крышкой до готовности."
+    ]
+  },
+  {
+    id: "mushroom_potatoes",
+    title: "Жареная картошка с грибами",
+    time: "40 минут",
+    portions: "3 порции",
+    ingredients: ["картофель", "грибы", "лук"],
+    optional: ["сметана", "зелень"],
+    steps: [
+      "Картофель нарежьте ломтиками.",
+      "Грибы и лук обжарьте отдельно.",
+      "Картофель обжарьте до золотистой корочки.",
+      "Добавьте грибы и лук.",
+      "Готовьте вместе ещё 5–7 минут."
+    ]
+  },
+  {
+    id: "mushroom_pasta",
+    title: "Макароны с грибами",
+    time: "30 минут",
+    portions: "3 порции",
+    ingredients: ["макароны", "грибы", "лук"],
+    optional: ["сливки", "сыр", "чеснок"],
+    steps: [
+      "Макароны отварите.",
+      "Грибы обжарьте с луком.",
+      "Добавьте сливки или немного воды.",
+      "Смешайте с макаронами.",
+      "Добавьте сыр."
+    ]
+  },
+  {
+    id: "fish_potatoes",
+    title: "Рыба с картофелем в духовке",
+    time: "50 минут",
+    portions: "4 порции",
+    ingredients: ["рыба", "картофель", "лук"],
+    optional: ["сметана", "сыр", "лимон"],
+    steps: [
+      "Картофель нарежьте тонкими кружочками.",
+      "Рыбу посолите и добавьте специи.",
+      "Выложите картофель, лук и рыбу в форму.",
+      "При наличии смажьте сметаной.",
+      "Запекайте при 190 °C около 40 минут."
+    ]
+  },
+  {
+    id: "cabbage_stew",
+    title: "Тушёная капуста",
+    time: "45 минут",
+    portions: "4 порции",
+    ingredients: ["капуста", "лук", "морковь"],
+    optional: ["помидоры", "фарш", "сосиски"],
+    steps: [
+      "Капусту нашинкуйте.",
+      "Лук и морковь обжарьте.",
+      "Добавьте капусту.",
+      "Влейте немного воды.",
+      "Тушите под крышкой около 30 минут."
+    ]
+  },
+  {
+    id: "cheese_pasta",
+    title: "Макароны с сыром",
+    time: "20 минут",
+    portions: "2 порции",
+    ingredients: ["макароны", "сыр"],
+    optional: ["молоко", "масло", "сливки"],
+    steps: [
+      "Макароны отварите.",
+      "Слейте воду.",
+      "Добавьте масло или сливки.",
+      "Всыпьте тёртый сыр.",
+      "Перемешайте до расплавления сыра."
+    ]
+  },
+  {
+    id: "milk_pancakes",
+    title: "Домашние блины",
+    time: "35 минут",
+    portions: "4 порции",
+    ingredients: ["молоко", "яйца", "мука"],
+    optional: ["сахар", "масло"],
+    steps: [
+      "Яйца взбейте с солью и сахаром.",
+      "Добавьте молоко.",
+      "Постепенно вмешайте муку.",
+      "Добавьте немного масла.",
+      "Обжарьте тонкие блины с двух сторон."
+    ]
+  }
+];
 
-const TITLE_TRANSLATIONS = {
-  chicken: "Курица",
-  beef: "Говядина",
-  pork: "Свинина",
-  fish: "Рыба",
-  potato: "Картофель",
-  rice: "Рис",
-  pasta: "Паста",
-  soup: "Суп",
-  salad: "Салат",
-  pie: "Пирог",
-  curry: "Карри",
-  stew: "Рагу",
-  cake: "Пирог",
-  bread: "Хлеб"
+const INGREDIENT_ALIASES = {
+  картошка: "картофель",
+  картошку: "картофель",
+  картошки: "картофель",
+  картофеля: "картофель",
+
+  помидор: "помидоры",
+  помидора: "помидоры",
+  томат: "помидоры",
+  томаты: "помидоры",
+
+  яйцо: "яйца",
+  яиц: "яйца",
+
+  курицу: "курица",
+  курицы: "курица",
+  грудка: "курица",
+  филе: "курица",
+
+  фарша: "фарш",
+  мяснойфарш: "фарш",
+
+  лука: "лук",
+  моркови: "морковь",
+  сыра: "сыр",
+
+  гриб: "грибы",
+  шампиньон: "грибы",
+  шампиньоны: "грибы",
+
+  макарон: "макароны",
+  спагетти: "макароны",
+  паста: "макароны",
+
+  капусты: "капуста",
+  кабачки: "кабачок",
+
+  рыбноефиле: "рыба",
+  рыбу: "рыба",
+
+  колбасу: "колбаса",
+  сосиска: "сосиски"
 };
 
 export default {
@@ -79,7 +377,7 @@ export default {
       return new Response("ok");
     }
 
-    return new Response("🥕 FRIDGE BOT работает!", {
+    return new Response("🥕 RadarFridge работает!", {
       headers: {
         "content-type": "text/plain; charset=UTF-8"
       }
@@ -89,14 +387,20 @@ export default {
 
 async function setupWebhook(url, env) {
   if (url.searchParams.get("secret") !== env.SETUP_SECRET) {
-    return new Response("Доступ запрещён", { status: 403 });
+    return new Response("Доступ запрещён", {
+      status: 403
+    });
   }
 
   const webhookUrl = `${url.origin}/webhook`;
 
-  const result = await telegramApi(env.BOT_TOKEN, "setWebhook", {
-    url: webhookUrl
-  });
+  const result = await telegramApi(
+    env.BOT_TOKEN,
+    "setWebhook",
+    {
+      url: webhookUrl
+    }
+  );
 
   return Response.json(result);
 }
@@ -116,16 +420,17 @@ async function handleUpdate(update, env) {
       env.BOT_TOKEN,
       chatId,
       [
-        "🥕 Привет! Я найду рецепты в интернете.",
+        "🥕 Привет! Я RadarFridge.",
         "",
-        "Напиши продукты через запятую.",
+        "Напиши продукты, которые у тебя есть, через запятую.",
         "",
         "Например:",
-        "курица, картошка, сыр, помидоры",
+        "курица, картошка, сыр, лук, помидоры",
         "",
-        "Я подберу до 5 подходящих рецептов."
+        "Я сразу подберу от 3 до 5 рецептов на русском языке."
       ].join("\n")
     );
+
     return;
   }
 
@@ -133,58 +438,45 @@ async function handleUpdate(update, env) {
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      "Напиши продукты через запятую, например:\nкурица, рис, лук, помидоры"
+      "Напиши продукты через запятую.\n\nНапример:\nфарш, картошка, сыр, лук"
     );
+
     return;
   }
+
+  const userIngredients = parseIngredients(text);
+
+  if (userIngredients.length === 0) {
+    await sendMessage(
+      env.BOT_TOKEN,
+      chatId,
+      "Не получилось распознать продукты. Напиши их через запятую."
+    );
+
+    return;
+  }
+
+  const recipes = findBestRecipes(userIngredients);
 
   await sendMessage(
     env.BOT_TOKEN,
     chatId,
-    "🔎 Ищу подходящие рецепты в интернете..."
+    [
+      `🍽 Нашёл ${recipes.length} подходящих рецептов`,
+      "",
+      `🥕 Твои продукты: ${userIngredients.join(", ")}`,
+      "",
+      "Лучшие варианты 👇"
+    ].join("\n")
   );
 
-  try {
-    const ingredients = parseIngredients(text);
-
-    if (ingredients.length === 0) {
-      await sendMessage(
-        env.BOT_TOKEN,
-        chatId,
-        "Не получилось распознать продукты. Напиши их через запятую."
-      );
-      return;
-    }
-
-    const meals = await findMealsByIngredients(ingredients);
-
-    if (meals.length === 0) {
-      await sendMessage(
-        env.BOT_TOKEN,
-        chatId,
-        [
-          "😕 Подходящих рецептов пока не найдено.",
-          "",
-          "Попробуй указать основной продукт первым.",
-          "Например: курица, картошка, сыр"
-        ].join("\n")
-      );
-      return;
-    }
-
-    await sendRecipeResults(
-      env.BOT_TOKEN,
-      chatId,
-      meals,
-      ingredients
-    );
-  } catch (error) {
-    console.error("Recipe search error:", error);
+  for (let index = 0; index < recipes.length; index++) {
+    const recipe = recipes[index];
 
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      "⚠️ Не удалось получить рецепты. Попробуй ещё раз через несколько секунд."
+      buildRecipeMessage(recipe, index + 1)
     );
   }
 }
@@ -194,7 +486,7 @@ function parseIngredients(text) {
     .toLowerCase()
     .replace(/ё/g, "е")
     .replace(
-      /у меня есть|в холодильнике есть|в холодильнике|есть продукты|из продуктов|приготовить из/gi,
+      /у меня есть|в холодильнике есть|в холодильнике|что приготовить из|приготовить из|осталось|остались|есть/gi,
       ""
     )
     .replace(/[.;\n/|]+/g, ",");
@@ -203,197 +495,142 @@ function parseIngredients(text) {
     ...new Set(
       cleaned
         .split(",")
-        .map((item) => item.trim())
+        .map((item) => normalizeIngredient(item))
         .filter(Boolean)
-        .map(translateIngredient)
     )
-  ].slice(0, 10);
+  ].slice(0, 15);
 }
 
-function translateIngredient(ingredient) {
-  const normalized = ingredient
-    .replace(/^(немного|есть|остался|остались)\s+/i, "")
-    .trim();
+function normalizeIngredient(value) {
+  const cleaned = value
+    .trim()
+    .replace(
+      /^(немного|один|одна|одно|два|две|кусок|пачка|банка)\s+/,
+      ""
+    )
+    .replace(/\s+/g, " ");
 
-  return INGREDIENT_TRANSLATIONS[normalized] || normalized;
-}
+  const compact = cleaned.replace(/\s/g, "");
 
-async function findMealsByIngredients(ingredients) {
-  const mealScores = new Map();
-
-  for (const ingredient of ingredients.slice(0, 5)) {
-    const meals = await filterMealsByIngredient(ingredient);
-
-    for (const meal of meals) {
-      const current = mealScores.get(meal.idMeal) || {
-        ...meal,
-        matchCount: 0
-      };
-
-      current.matchCount += 1;
-      mealScores.set(meal.idMeal, current);
-    }
-  }
-
-  const rankedMeals = [...mealScores.values()]
-    .sort((a, b) => b.matchCount - a.matchCount)
-    .slice(0, 5);
-
-  const detailedMeals = [];
-
-  for (const meal of rankedMeals) {
-    const details = await lookupMeal(meal.idMeal);
-
-    if (details) {
-      detailedMeals.push({
-        ...details,
-        matchCount: meal.matchCount
-      });
-    }
-  }
-
-  return detailedMeals;
-}
-
-async function filterMealsByIngredient(ingredient) {
-  const url =
-    `${MEALDB_API}/filter.php?i=${encodeURIComponent(ingredient)}`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`MealDB filter error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return Array.isArray(data.meals) ? data.meals : [];
-}
-
-async function lookupMeal(id) {
-  const response = await fetch(
-    `${MEALDB_API}/lookup.php?i=${encodeURIComponent(id)}`
+  return (
+    INGREDIENT_ALIASES[cleaned] ||
+    INGREDIENT_ALIASES[compact] ||
+    cleaned
   );
-
-  if (!response.ok) {
-    throw new Error(`MealDB lookup error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.meals?.[0] || null;
 }
 
-async function sendRecipeResults(
-  botToken,
-  chatId,
-  meals,
-  ingredients
-) {
-  await sendMessage(
-    botToken,
-    chatId,
-    [
-      `🍽 Нашёл рецептов: ${meals.length}`,
-      "",
-      `По продуктам: ${ingredients.join(", ")}`,
-      "",
-      "Отправляю лучшие варианты 👇"
-    ].join("\n")
-  );
-
-  for (let index = 0; index < meals.length; index++) {
-    const meal = meals[index];
-    const caption = buildRecipeCaption(meal, index + 1);
-
-    if (meal.strMealThumb) {
-      await sendPhoto(
-        botToken,
-        chatId,
-        meal.strMealThumb,
-        caption
-      );
-    } else {
-      await sendMessage(botToken, chatId, caption);
-    }
-  }
-}
-
-function buildRecipeCaption(meal, number) {
-  const ingredients = extractMealIngredients(meal);
-  const title = translateTitle(meal.strMeal || "Рецепт");
-
-  const sourceUrl =
-    meal.strSource ||
-    `https://www.themealdb.com/meal/${meal.idMeal}`;
-
-  const lines = [
-    `${number}️⃣ ${title}`,
-    "",
-    `🌍 Кухня: ${meal.strArea || "международная"}`,
-    `📂 Категория: ${meal.strCategory || "блюдо"}`,
-    `✅ Совпало продуктов: ${meal.matchCount}`,
-    "",
-    "🥕 Ингредиенты:",
-    ...ingredients.slice(0, 12).map((item) => `• ${item}`),
-    "",
-    `🔗 Оригинальный рецепт: ${sourceUrl}`
-  ];
-
-  if (meal.strYoutube) {
-    lines.push(`🎥 Видео: ${meal.strYoutube}`);
-  }
-
-  return lines.join("\n").slice(0, 1024);
-}
-
-function extractMealIngredients(meal) {
-  const ingredients = [];
-
-  for (let index = 1; index <= 20; index++) {
-    const ingredient = String(
-      meal[`strIngredient${index}`] || ""
-    ).trim();
-
-    const measure = String(
-      meal[`strMeasure${index}`] || ""
-    ).trim();
-
-    if (ingredient) {
-      ingredients.push(
-        measure ? `${ingredient} — ${measure}` : ingredient
-      );
-    }
-  }
-
-  return ingredients;
-}
-
-function translateTitle(title) {
-  let translated = title;
-
-  for (const [english, russian] of Object.entries(TITLE_TRANSLATIONS)) {
-    translated = translated.replace(
-      new RegExp(`\\b${english}\\b`, "gi"),
-      russian
+function findBestRecipes(userIngredients) {
+  const rankedRecipes = RECIPES.map((recipe) => {
+    const matchedIngredients = recipe.ingredients.filter(
+      (ingredient) =>
+        userIngredients.some((userIngredient) =>
+          ingredientsMatch(userIngredient, ingredient)
+        )
     );
+
+    const matchedOptional = recipe.optional.filter(
+      (ingredient) =>
+        userIngredients.some((userIngredient) =>
+          ingredientsMatch(userIngredient, ingredient)
+        )
+    );
+
+    const missingIngredients = recipe.ingredients.filter(
+      (ingredient) =>
+        !matchedIngredients.includes(ingredient)
+    );
+
+    const matchRatio =
+      matchedIngredients.length / recipe.ingredients.length;
+
+    const score =
+      matchedIngredients.length * 20 +
+      matchedOptional.length * 5 +
+      matchRatio * 20 -
+      missingIngredients.length * 7;
+
+    return {
+      ...recipe,
+      matchedIngredients,
+      matchedOptional,
+      missingIngredients,
+      score
+    };
+  });
+
+  let results = rankedRecipes
+    .filter((recipe) => recipe.matchedIngredients.length > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (results.length >= 5) {
+    return results.slice(0, 5);
   }
 
-  return translated;
+  if (results.length >= 3) {
+    return results;
+  }
+
+  return rankedRecipes
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
+function ingredientsMatch(userIngredient, recipeIngredient) {
+  const user = userIngredient.toLowerCase();
+  const recipe = recipeIngredient.toLowerCase();
+
+  return (
+    user === recipe ||
+    user.includes(recipe) ||
+    recipe.includes(user)
+  );
+}
+
+function buildRecipeMessage(recipe, number) {
+  const availableText =
+    recipe.matchedIngredients.length > 0
+      ? recipe.matchedIngredients.join(", ")
+      : "нет точных совпадений";
+
+  const missingText =
+    recipe.missingIngredients.length > 0
+      ? recipe.missingIngredients.join(", ")
+      : "ничего — все основные продукты есть";
+
+  const optionalText =
+    recipe.optional.length > 0
+      ? recipe.optional.join(", ")
+      : "не требуются";
+
+  const stepsText = recipe.steps
+    .map((step, index) => `${index + 1}. ${step}`)
+    .join("\n");
+
+  return [
+    `${number}️⃣ ${recipe.title}`,
+    "",
+    `⏱ Время: ${recipe.time}`,
+    `🍽 Количество: ${recipe.portions}`,
+    "",
+    `✅ Уже есть: ${availableText}`,
+    `🛒 Не хватает: ${missingText}`,
+    `➕ По желанию: ${optionalText}`,
+    "",
+    "👨‍🍳 Приготовление:",
+    stepsText
+  ].join("\n");
 }
 
 async function sendMessage(botToken, chatId, text) {
-  return telegramApi(botToken, "sendMessage", {
-    chat_id: chatId,
-    text,
-    disable_web_page_preview: true
-  });
-}
-
-async function sendPhoto(botToken, chatId, photo, caption) {
-  return telegramApi(botToken, "sendPhoto", {
-    chat_id: chatId,
-    photo,
-    caption
-  });
+  return telegramApi(
+    botToken,
+    "sendMessage",
+    {
+      chat_id: chatId,
+      text,
+      disable_web_page_preview: true
+    }
+  );
 }
 
 async function telegramApi(botToken, method, payload) {
