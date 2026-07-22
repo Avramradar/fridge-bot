@@ -1,12 +1,8 @@
+import { DurableObject } from "cloudflare:workers";
+
 const TELEGRAM_API = "https://api.telegram.org";
 const CHANNEL_USERNAME = "FoodRadarDaily";
-const MAX_MEMORY_RECIPES = 200;
-
-/*
- * Временная память.
- * Очищается после перезапуска или нового деплоя Worker.
- */
-const CHANNEL_RECIPES = [];
+const MAX_RECIPES = 200;
 
 const INGREDIENT_ALIASES = {
   картошка: "картофель",
@@ -22,7 +18,6 @@ const INGREDIENT_ALIASES = {
 
   яйцо: "яйца",
   яиц: "яйца",
-  яйцами: "яйца",
 
   курицу: "курица",
   курицы: "курица",
@@ -67,8 +62,6 @@ const INGREDIENT_ALIASES = {
   рыбы: "рыба",
   рыбой: "рыба",
 
-  рыбноефиле: "рыбное филе",
-
   колбасу: "колбаса",
   колбасы: "колбаса",
 
@@ -98,13 +91,30 @@ export default {
     }
 
     if (url.pathname === "/status") {
-      return Response.json({
-        ok: true,
-        bot: "RadarFridge",
-        source: `@${CHANNEL_USERNAME}`,
-        stored_recipes: CHANNEL_RECIPES.length,
-        storage: "temporary-memory"
-      });
+      try {
+        const store = getRecipeStore(env);
+        const count = await store.getCount();
+
+        return Response.json({
+          ok: true,
+          bot: "RadarFridge",
+          source: `@${CHANNEL_USERNAME}`,
+          stored_recipes: count,
+          storage: "durable-object-sqlite"
+        });
+      } catch (error) {
+        console.error("Status error:", error);
+
+        return Response.json(
+          {
+            ok: false,
+            error: String(error?.message || error)
+          },
+          {
+            status: 500
+          }
+        );
+      }
     }
 
     if (
@@ -113,6 +123,7 @@ export default {
     ) {
       try {
         const update = await request.json();
+
         const task = handleUpdate(update, env);
 
         if (ctx?.waitUntil) {
@@ -124,9 +135,6 @@ export default {
         console.error("Webhook error:", error);
       }
 
-      /*
-       * Telegram должен быстро получить ответ 200.
-       */
       return new Response("ok");
     }
 
@@ -134,7 +142,10 @@ export default {
       [
         "🥕 RadarFridge работает.",
         `Источник: @${CHANNEL_USERNAME}`,
-        `Рецептов во временной памяти: ${CHANNEL_RECIPES.length}`
+        "Хранилище: Durable Object SQLite",
+        "",
+        "Проверка:",
+        `${url.origin}/status`
       ].join("\n"),
       {
         headers: {
@@ -144,6 +155,155 @@ export default {
     );
   }
 };
+
+export class RecipeStore extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+
+    this.sql = ctx.storage.sql;
+
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS recipes (
+        message_id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        text TEXT NOT NULL,
+        url TEXT NOT NULL,
+        published_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_recipes_published_at
+      ON recipes(published_at DESC);
+    `);
+  }
+
+  async saveRecipe(recipe) {
+    this.sql.exec(
+      `
+        INSERT INTO recipes (
+          message_id,
+          title,
+          text,
+          url,
+          published_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(message_id) DO UPDATE SET
+          title = excluded.title,
+          text = excluded.text,
+          url = excluded.url,
+          published_at = excluded.published_at,
+          updated_at = excluded.updated_at
+      `,
+      recipe.messageId,
+      recipe.title,
+      recipe.text,
+      recipe.url,
+      recipe.publishedAt,
+      Date.now()
+    );
+
+    this.sql.exec(
+      `
+        DELETE FROM recipes
+        WHERE message_id NOT IN (
+          SELECT message_id
+          FROM recipes
+          ORDER BY published_at DESC, message_id DESC
+          LIMIT ?
+        )
+      `,
+      MAX_RECIPES
+    );
+
+    return {
+      ok: true,
+      count: await this.getCount()
+    };
+  }
+
+  async getCount() {
+    const rows = this.sql
+      .exec(
+        `
+          SELECT COUNT(*) AS count
+          FROM recipes
+        `
+      )
+      .toArray();
+
+    return Number(rows[0]?.count || 0);
+  }
+
+  async searchRecipes(ingredients, limit = 5) {
+    const rows = this.sql
+      .exec(
+        `
+          SELECT
+            message_id,
+            title,
+            text,
+            url,
+            published_at
+          FROM recipes
+          ORDER BY published_at DESC, message_id DESC
+          LIMIT ?
+        `,
+        MAX_RECIPES
+      )
+      .toArray();
+
+    const recipes = rows
+      .map((row) => {
+        const matchedIngredients =
+          findMatchedIngredients(
+            row.text,
+            ingredients
+          );
+
+        return {
+          id: String(row.message_id),
+          messageId: Number(row.message_id),
+          title: row.title,
+          text: row.text,
+          url: row.url,
+          publishedAt: Number(
+            row.published_at
+          ),
+          matchedIngredients,
+          score: calculateRecipeScore(
+            row.text,
+            matchedIngredients,
+            ingredients
+          )
+        };
+      })
+      .filter((recipe) => {
+        return (
+          recipe.matchedIngredients.length > 0
+        );
+      })
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        return b.messageId - a.messageId;
+      });
+
+    return recipes.slice(0, limit);
+  }
+
+  async clearRecipes() {
+    this.sql.exec("DELETE FROM recipes");
+
+    return {
+      ok: true,
+      count: 0
+    };
+  }
+}
 
 async function setupWebhook(url, env) {
   if (!env.BOT_TOKEN || !env.SETUP_SECRET) {
@@ -184,17 +344,21 @@ async function setupWebhook(url, env) {
 }
 
 async function handleUpdate(update, env) {
-  console.log(JSON.stringify(update, null, 2));
-  /*
-   * Сохраняем новую или отредактированную
-   * публикацию канала во временной памяти.
-   */
+  console.log(
+    "Telegram update:",
+    JSON.stringify(update)
+  );
+
   const channelMessage =
     update?.channel_post ||
     update?.edited_channel_post;
 
   if (channelMessage) {
-    rememberChannelPost(channelMessage);
+    await saveChannelPost(
+      channelMessage,
+      env
+    );
+
     return;
   }
 
@@ -204,9 +368,6 @@ async function handleUpdate(update, env) {
     return;
   }
 
-  /*
-   * Бот отвечает только в личном чате.
-   */
   if (
     message.chat.type &&
     message.chat.type !== "private"
@@ -215,6 +376,7 @@ async function handleUpdate(update, env) {
   }
 
   const chatId = message.chat.id;
+
   const text = String(
     message.text ||
     message.caption ||
@@ -230,14 +392,36 @@ async function handleUpdate(update, env) {
       [
         "🥕 Привет! Я RadarFridge.",
         "",
-        "Напиши продукты, которые есть у тебя дома.",
+        "Напиши продукты, которые есть дома.",
         "",
         "Например:",
         "курица, картошка, сыр, лук",
         "",
-        `Я поищу подходящие рецепты среди новых публикаций канала @${CHANNEL_USERNAME}.`,
+        `Я найду подходящие рецепты в канале @${CHANNEL_USERNAME}.`,
         "",
-        "Команда /status покажет, сколько рецептов сейчас находится в памяти."
+        "Команда /status покажет количество сохранённых рецептов."
+      ].join("\n")
+    );
+
+    return;
+  }
+
+  if (command === "/help") {
+    await sendMessage(
+      env.BOT_TOKEN,
+      chatId,
+      [
+        "ℹ️ Как пользоваться:",
+        "",
+        "Напиши продукты через запятую.",
+        "",
+        "Пример:",
+        "фарш, картошка, сыр",
+        "",
+        "Команды:",
+        "/start — начало",
+        "/status — количество рецептов",
+        "/sources — источник рецептов"
       ].join("\n")
     );
 
@@ -252,9 +436,7 @@ async function handleUpdate(update, env) {
         "📡 Источник рецептов:",
         "",
         `@${CHANNEL_USERNAME}`,
-        `https://t.me/${CHANNEL_USERNAME}`,
-        "",
-        "Бот запоминает новые публикации канала после их получения."
+        `https://t.me/${CHANNEL_USERNAME}`
       ].join("\n")
     );
 
@@ -262,43 +444,18 @@ async function handleUpdate(update, env) {
   }
 
   if (command === "/status") {
+    const store = getRecipeStore(env);
+    const count = await store.getCount();
+
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
       [
         "📊 Состояние RadarFridge:",
         "",
-        `Сохранено рецептов: ${CHANNEL_RECIPES.length}`,
-        `Максимум: ${MAX_MEMORY_RECIPES}`,
-        "Хранилище: временная память Worker",
-        "",
-        CHANNEL_RECIPES.length === 0
-          ? "Сейчас память пустая. Опубликуй новый пост в канале после установки webhook."
-          : "Можно отправлять продукты для поиска."
-      ].join("\n")
-    );
-
-    return;
-  }
-
-  if (command === "/help") {
-    await sendMessage(
-      env.BOT_TOKEN,
-      chatId,
-      [
-        "ℹ️ Как пользоваться ботом:",
-        "",
-        "1. Напиши продукты через запятую.",
-        "2. Бот сравнит их с рецептами в памяти.",
-        "3. Ты получишь ссылки на подходящие публикации.",
-        "",
-        "Пример:",
-        "картошка, курица, сыр",
-        "",
-        "Команды:",
-        "/start — начало",
-        "/sources — источник",
-        "/status — состояние памяти"
+        `Сохранено рецептов: ${count}`,
+        `Максимум: ${MAX_RECIPES}`,
+        "Хранилище: Durable Object SQLite"
       ].join("\n")
     );
 
@@ -313,38 +470,21 @@ async function handleUpdate(update, env) {
         "Напиши продукты через запятую.",
         "",
         "Например:",
-        "фарш, картошка, сыр, лук"
+        "курица, картошка, сыр"
       ].join("\n")
     );
 
     return;
   }
 
-  if (CHANNEL_RECIPES.length === 0) {
-    await sendMessage(
-      env.BOT_TOKEN,
-      chatId,
-      [
-        "📭 В памяти пока нет рецептов.",
-        "",
-        `Опубликуй новый рецепт в канале @${CHANNEL_USERNAME}.`,
-        "",
-        "Бот начнёт запоминать публикации только после подключения webhook.",
-        "",
-        "Проверить состояние можно командой /status."
-      ].join("\n")
-    );
-
-    return;
-  }
-
-  const ingredients = parseIngredients(text);
+  const ingredients =
+    parseIngredients(text);
 
   if (ingredients.length === 0) {
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      "Не удалось распознать продукты. Напиши их через запятую."
+      "Не удалось распознать продукты."
     );
 
     return;
@@ -357,20 +497,43 @@ async function handleUpdate(update, env) {
   );
 
   try {
+    const store = getRecipeStore(env);
+
+    const count = await store.getCount();
+
+    if (count === 0) {
+      await sendMessage(
+        env.BOT_TOKEN,
+        chatId,
+        [
+          "📭 В базе пока нет рецептов.",
+          "",
+          `Опубликуй новый пост в канале @${CHANNEL_USERNAME}.`,
+          "",
+          "После этого повтори запрос."
+        ].join("\n")
+      );
+
+      return;
+    }
+
     const recipes =
-      searchChannelRecipes(ingredients);
+      await store.searchRecipes(
+        ingredients,
+        5
+      );
 
     if (recipes.length === 0) {
       await sendMessage(
         env.BOT_TOKEN,
         chatId,
         [
-          "Подходящих публикаций пока не нашлось.",
+          "Подходящих рецептов не нашлось.",
           "",
           `🥕 Запрос: ${ingredients.join(", ")}`,
-          `📚 Проверено рецептов: ${CHANNEL_RECIPES.length}`,
+          `📚 Проверено рецептов: ${count}`,
           "",
-          "Попробуй убрать один из продуктов или написать другое название."
+          "Попробуй убрать один продукт или написать другое название."
         ].join("\n")
       );
 
@@ -384,7 +547,7 @@ async function handleUpdate(update, env) {
         `🍽 Найдено рецептов: ${recipes.length}`,
         "",
         `🥕 По продуктам: ${ingredients.join(", ")}`,
-        `📚 Рецептов в памяти: ${CHANNEL_RECIPES.length}`,
+        `📚 Рецептов в базе: ${count}`,
         "",
         "Лучшие варианты 👇"
       ].join("\n")
@@ -395,7 +558,7 @@ async function handleUpdate(update, env) {
       index < recipes.length;
       index++
     ) {
-      await sendChannelRecipe(
+      await sendRecipe(
         env.BOT_TOKEN,
         chatId,
         recipes[index],
@@ -413,13 +576,16 @@ async function handleUpdate(update, env) {
       [
         "⚠️ Во время поиска произошла ошибка.",
         "",
-        "Попробуй повторить запрос через несколько секунд."
+        "Попробуй повторить запрос."
       ].join("\n")
     );
   }
 }
 
-function rememberChannelPost(message) {
+async function saveChannelPost(
+  message,
+  env
+) {
   const text = String(
     message.text ||
     message.caption ||
@@ -428,111 +594,59 @@ function rememberChannelPost(message) {
 
   if (!text) {
     console.log(
-      "Channel post ignored: no text or caption"
+      "Channel post ignored: no text"
     );
 
     return;
   }
 
-  const chatUsername =
+  const username =
     message.chat?.username ||
     CHANNEL_USERNAME;
 
-  /*
-   * Не запоминаем посты другого канала,
-   * если webhook неожиданно получил их.
-   */
   if (
     message.chat?.username &&
     message.chat.username.toLowerCase() !==
       CHANNEL_USERNAME.toLowerCase()
   ) {
     console.log(
-      `Post ignored from channel: @${message.chat.username}`
+      `Ignored channel: @${message.chat.username}`
     );
 
     return;
   }
 
-  const id = String(message.message_id);
-
   const recipe = {
-    id,
-    messageId: message.message_id,
+    messageId: Number(message.message_id),
     title: extractPostTitle(text),
     text,
-    url: `https://t.me/${chatUsername}/${id}`,
-    publishedAt: message.date
-      ? new Date(
-          message.date * 1000
-        ).toISOString()
-      : ""
+    url: `https://t.me/${username}/${message.message_id}`,
+    publishedAt:
+      Number(message.date || 0) * 1000 ||
+      Date.now()
   };
 
-  const existingIndex =
-    CHANNEL_RECIPES.findIndex((item) => {
-      return item.id === id;
-    });
+  const store = getRecipeStore(env);
 
-  if (existingIndex >= 0) {
-    CHANNEL_RECIPES[existingIndex] = recipe;
-  } else {
-    CHANNEL_RECIPES.unshift(recipe);
-  }
-
-  if (
-    CHANNEL_RECIPES.length >
-    MAX_MEMORY_RECIPES
-  ) {
-    CHANNEL_RECIPES.length =
-      MAX_MEMORY_RECIPES;
-  }
+  const result =
+    await store.saveRecipe(recipe);
 
   console.log(
-    `Recipe remembered: ${id}. Total: ${CHANNEL_RECIPES.length}`
+    "Recipe saved:",
+    JSON.stringify(result)
   );
 }
 
-function searchChannelRecipes(ingredients) {
-  const recipes = CHANNEL_RECIPES
-    .map((post) => {
-      const matchedIngredients =
-        findMatchedIngredients(
-          post.text,
-          ingredients
-        );
+function getRecipeStore(env) {
+  if (!env.RECIPE_STORE) {
+    throw new Error(
+      "RECIPE_STORE binding is missing"
+    );
+  }
 
-      const score =
-        calculateChannelPostScore(
-          post.text,
-          matchedIngredients,
-          ingredients
-        );
-
-      return {
-        ...post,
-        matchedIngredients,
-        score
-      };
-    })
-    .filter((post) => {
-      return (
-        post.matchedIngredients.length > 0
-      );
-    })
-    .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-
-      return (
-        Number(b.messageId) -
-        Number(a.messageId)
-      );
-    });
-
-  return removeDuplicatePosts(recipes)
-    .slice(0, 5);
+  return env.RECIPE_STORE.getByName(
+    "food-radar-daily"
+  );
 }
 
 function parseIngredients(text) {
@@ -551,10 +665,6 @@ function parseIngredients(text) {
     .map(normalizeIngredient)
     .filter(Boolean);
 
-  /*
-   * Если пользователь написал короткий список
-   * только через пробелы, пробуем разделить его.
-   */
   if (
     parts.length === 1 &&
     !cleaned.includes(",")
@@ -642,7 +752,7 @@ function findMatchedIngredients(
   );
 }
 
-function calculateChannelPostScore(
+function calculateRecipeScore(
   text,
   matchedIngredients,
   allIngredients
@@ -704,9 +814,7 @@ function calculateChannelPostScore(
 function extractPostTitle(text) {
   const lines = String(text)
     .split("\n")
-    .map((line) => {
-      return line.trim();
-    })
+    .map((line) => line.trim())
     .filter(Boolean);
 
   if (lines.length === 0) {
@@ -772,7 +880,9 @@ function getIngredientRoot(word) {
   for (const ending of endings) {
     if (
       normalized.endsWith(ending) &&
-      normalized.length - ending.length >= 4
+      normalized.length -
+        ending.length >=
+        4
     ) {
       return normalized.slice(
         0,
@@ -802,23 +912,7 @@ function normalizeSearchText(value) {
     .trim();
 }
 
-function removeDuplicatePosts(posts) {
-  const seenIds = new Set();
-  const result = [];
-
-  for (const post of posts) {
-    if (seenIds.has(post.id)) {
-      continue;
-    }
-
-    seenIds.add(post.id);
-    result.push(post);
-  }
-
-  return result;
-}
-
-async function sendChannelRecipe(
+async function sendRecipe(
   botToken,
   chatId,
   recipe,
@@ -839,7 +933,7 @@ async function sendChannelRecipe(
     "",
     escapeHtml(description),
     "",
-    `🔗 <a href="${escapeHtmlAttribute(recipe.url)}">Открыть публикацию в канале</a>`
+    `🔗 <a href="${escapeHtmlAttribute(recipe.url)}">Открыть публикацию</a>`
   ].join("\n");
 
   return telegramApi(
@@ -912,15 +1006,9 @@ async function telegramApi(
   payload
 ) {
   if (!botToken) {
-    console.error(
+    throw new Error(
       "BOT_TOKEN is not configured"
     );
-
-    return {
-      ok: false,
-      description:
-        "BOT_TOKEN is not configured"
-    };
   }
 
   const response =
@@ -932,30 +1020,12 @@ async function telegramApi(
           "content-type":
             "application/json"
         },
-        body: JSON.stringify(
-          removeUndefinedValues(payload)
-        )
+        body: JSON.stringify(payload)
       },
       10000
     );
 
-  let result;
-
-  try {
-    result = await response.json();
-  } catch {
-    console.error(
-      "Telegram API returned invalid JSON:",
-      response.status
-    );
-
-    return {
-      ok: false,
-      error_code: response.status,
-      description:
-        "Invalid Telegram response"
-    };
-  }
+  const result = await response.json();
 
   if (!result.ok) {
     console.error(
@@ -965,16 +1035,6 @@ async function telegramApi(
   }
 
   return result;
-}
-
-function removeUndefinedValues(object) {
-  return Object.fromEntries(
-    Object.entries(object).filter(
-      ([, value]) => {
-        return value !== undefined;
-      }
-    )
-  );
 }
 
 async function fetchWithTimeout(
