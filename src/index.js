@@ -166,7 +166,7 @@ async function setupWebhook(url, env) {
     "setWebhook",
     {
       url: webhookUrl,
-      allowed_updates: ["message"]
+      allowed_updates: ["message", "channel_post", "edited_channel_post"] 
     }
   );
 
