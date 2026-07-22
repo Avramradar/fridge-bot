@@ -4,222 +4,278 @@ import * as cheerio from "cheerio";
 const SOURCE_NAME = "RussianFood";
 const BASE_URL = "https://www.russianfood.com";
 
-const requestHeaders = {
+const HEADERS = {
   "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137 Safari/537.36",
-  "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.7",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137.0.0.0 Safari/537.36",
   Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.7",
+  Referer: `${BASE_URL}/`
 };
 
 function normalizeText(value = "") {
   return String(value)
-    .replace(/\s+/g, " ")
     .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-function makeAbsoluteUrl(url = "") {
-  const cleanUrl = normalizeText(url);
+function normalizeIngredients(ingredients) {
+  const ingredientList = Array.isArray(ingredients)
+    ? ingredients
+    : String(ingredients || "").split(",");
 
-  if (!cleanUrl) {
+  return ingredientList
+    .map((ingredient) => normalizeText(ingredient).toLowerCase())
+    .filter(Boolean)
+    .filter((ingredient, index, list) => {
+      return list.indexOf(ingredient) === index;
+    });
+}
+
+function makeAbsoluteUrl(value = "") {
+  const url = normalizeText(value);
+
+  if (!url) {
     return "";
   }
 
   try {
-    return new URL(cleanUrl, BASE_URL).toString();
+    return new URL(url, BASE_URL).toString();
   } catch {
     return "";
   }
 }
 
-function normalizeIngredients(ingredients) {
-  const values = Array.isArray(ingredients)
-    ? ingredients
-    : String(ingredients || "").split(",");
-
-  return values
-    .map((ingredient) => normalizeText(ingredient).toLowerCase())
-    .filter(Boolean)
-    .filter((ingredient, index, list) => list.indexOf(ingredient) === index);
-}
-
-function calculateMatchScore(text, ingredients) {
+function calculateMatch(text, ingredients) {
   const normalizedText = normalizeText(text).toLowerCase();
 
-  if (!normalizedText || ingredients.length === 0) {
-    return {
-      score: 0,
-      matchedIngredients: []
-    };
-  }
+  const matchedIngredients = ingredients.filter((ingredient) => {
+    return normalizedText.includes(ingredient);
+  });
 
-  const matchedIngredients = ingredients.filter((ingredient) =>
-    normalizedText.includes(ingredient)
-  );
+  const score =
+    ingredients.length > 0
+      ? matchedIngredients.length / ingredients.length
+      : 0;
 
   return {
-    score: matchedIngredients.length / ingredients.length,
+    score,
     matchedIngredients
   };
 }
 
-function findRecipeCards($) {
-  const selectors = [
+function findRecipeContainer($, linkElement) {
+  const link = $(linkElement);
+
+  const containerSelectors = [
     ".recipe_l",
     ".recipe",
     ".recipe-item",
+    ".recipe-card",
     ".recipe_list_new",
     ".recipe_list",
-    ".recipe-card",
-    "article"
+    "article",
+    "li",
+    "tr"
   ];
 
-  const cards = [];
+  for (const selector of containerSelectors) {
+    const container = link.closest(selector);
 
-  for (const selector of selectors) {
-    $(selector).each((index, element) => {
-      cards.push(element);
-    });
-
-    if (cards.length > 0) {
-      break;
+    if (container.length > 0) {
+      return container.first();
     }
   }
 
-  return cards;
+  return link.parent();
 }
 
-function parseRecipeCard($, element, ingredients) {
-  const card = $(element);
+function getRecipeTitle($, linkElement, container) {
+  const link = $(linkElement);
 
-  const linkElement = card
-    .find(
-      [
-        "a.recipe_l_title",
-        "a.recipe-title",
-        ".recipe_l_title a",
-        ".recipe-title a",
-        "h2 a",
-        "h3 a",
-        "a[href*='/recipes/recipe.php']"
-      ].join(",")
-    )
-    .first();
+  const titleFromAttribute = normalizeText(link.attr("title"));
 
-  const fallbackLink = card.find("a[href]").first();
-
-  const selectedLink = linkElement.length ? linkElement : fallbackLink;
-
-  const title = normalizeText(
-    selectedLink.attr("title") ||
-      selectedLink.text() ||
-      card.find("h2, h3, .title").first().text()
-  );
-
-  const url = makeAbsoluteUrl(selectedLink.attr("href"));
-
-  if (!title || !url) {
-    return null;
+  if (titleFromAttribute) {
+    return titleFromAttribute;
   }
 
-  if (!url.includes("russianfood.com")) {
-    return null;
+  const titleFromLink = normalizeText(link.text());
+
+  if (titleFromLink) {
+    return titleFromLink;
   }
 
-  const imageElement = card.find("img").first();
-
-  const image = makeAbsoluteUrl(
-    imageElement.attr("data-src") ||
-      imageElement.attr("data-original") ||
-      imageElement.attr("src")
-  );
-
-  const description = normalizeText(
-    card
-      .find(
-        [
-          ".recipe_l_descript",
-          ".recipe-description",
-          ".description",
-          ".announce",
-          "p"
-        ].join(",")
-      )
+  return normalizeText(
+    container
+      .find("h1, h2, h3, h4, .title, .recipe-title")
       .first()
       .text()
   );
-
-  const cardText = normalizeText(card.text());
-  const match = calculateMatchScore(
-    `${title} ${description} ${cardText}`,
-    ingredients
-  );
-
-  return {
-    source: SOURCE_NAME,
-    title,
-    url,
-    image,
-    description,
-    score: match.score,
-    matchedIngredients: match.matchedIngredients
-  };
 }
 
-function removeDuplicates(recipes) {
-  const uniqueRecipes = new Map();
+function getRecipeImage(container) {
+  const imageElement = container.find("img").first();
 
-  for (const recipe of recipes) {
-    const key = recipe.url || recipe.title.toLowerCase();
+  const imageUrl =
+    imageElement.attr("data-src") ||
+    imageElement.attr("data-original") ||
+    imageElement.attr("data-lazy-src") ||
+    imageElement.attr("src") ||
+    "";
 
-    if (!uniqueRecipes.has(key)) {
-      uniqueRecipes.set(key, recipe);
+  return makeAbsoluteUrl(imageUrl);
+}
+
+function getRecipeDescription(container) {
+  const descriptionSelectors = [
+    ".recipe_l_descript",
+    ".recipe-description",
+    ".description",
+    ".announce",
+    ".recipe-text",
+    "p"
+  ];
+
+  for (const selector of descriptionSelectors) {
+    const description = normalizeText(
+      container.find(selector).first().text()
+    );
+
+    if (description) {
+      return description;
     }
   }
 
-  return [...uniqueRecipes.values()];
+  return "";
 }
 
-export async function searchRussianFood(ingredients, options = {}) {
-  const normalizedIngredients = normalizeIngredients(ingredients);
+function parseRecipes(html, ingredients) {
+  const $ = cheerio.load(html);
+
+  const recipes = [];
+  const usedUrls = new Set();
+
+  const recipeLinks = $(
+    [
+      'a[href*="/recipes/recipe.php"]',
+      'a[href*="recipe.php?rid="]',
+      'a[href*="/recipe/"]'
+    ].join(",")
+  );
+
+  recipeLinks.each((index, element) => {
+    const link = $(element);
+
+    const url = makeAbsoluteUrl(link.attr("href"));
+
+    if (!url) {
+      return;
+    }
+
+    if (!url.includes("russianfood.com")) {
+      return;
+    }
+
+    if (usedUrls.has(url)) {
+      return;
+    }
+
+    const container = findRecipeContainer($, element);
+
+    const title = getRecipeTitle($, element, container);
+
+    if (!title) {
+      return;
+    }
+
+    const description = getRecipeDescription(container);
+    const image = getRecipeImage(container);
+    const fullText = normalizeText(container.text());
+
+    const match = calculateMatch(
+      `${title} ${description} ${fullText}`,
+      ingredients
+    );
+
+    usedUrls.add(url);
+
+    recipes.push({
+      source: SOURCE_NAME,
+      title,
+      url,
+      image,
+      description,
+      score: match.score,
+      matchedIngredients: match.matchedIngredients
+    });
+  });
+
+  return recipes;
+}
+
+async function requestSearchPage(searchText) {
+  const response = await axios.get(`${BASE_URL}/search/`, {
+    params: {
+      search: searchText
+    },
+    headers: HEADERS,
+    timeout: 20000,
+    responseType: "text",
+    maxRedirects: 5,
+    validateStatus(status) {
+      return status >= 200 && status < 400;
+    }
+  });
+
+  return response.data;
+}
+
+function sortRecipes(recipes) {
+  return recipes.sort((firstRecipe, secondRecipe) => {
+    if (secondRecipe.score !== firstRecipe.score) {
+      return secondRecipe.score - firstRecipe.score;
+    }
+
+    return firstRecipe.title.localeCompare(
+      secondRecipe.title,
+      "ru"
+    );
+  });
+}
+
+export async function searchRussianFood(
+  ingredients,
+  options = {}
+) {
+  const normalizedIngredients =
+    normalizeIngredients(ingredients);
 
   if (normalizedIngredients.length === 0) {
     return [];
   }
 
-  const limit = Math.max(1, Math.min(Number(options.limit) || 10, 20));
+  const requestedLimit = Number(options.limit) || 5;
+  const limit = Math.max(1, Math.min(requestedLimit, 20));
 
   const searchText = normalizedIngredients.join(", ");
 
   try {
-    const response = await axios.get(`${BASE_URL}/search/`, {
-      params: {
-        search: searchText
-      },
-      headers: requestHeaders,
-      timeout: 15000,
-      responseType: "text",
-      validateStatus: (status) => status >= 200 && status < 400
-    });
+    const html = await requestSearchPage(searchText);
 
-    const $ = cheerio.load(response.data);
+    const recipes = parseRecipes(
+      html,
+      normalizedIngredients
+    );
 
-    const cards = findRecipeCards($);
-
-    const recipes = cards
-      .map((element) => parseRecipeCard($, element, normalizedIngredients))
-      .filter(Boolean);
-
-    return removeDuplicates(recipes)
-      .sort((firstRecipe, secondRecipe) => {
-        return secondRecipe.score - firstRecipe.score;
-      })
-      .slice(0, limit);
+    return sortRecipes(recipes).slice(0, limit);
   } catch (error) {
+    const status = error.response?.status;
+    const message = error.message || "Неизвестная ошибка";
+
     console.error(
       `[${SOURCE_NAME}] Ошибка поиска:`,
-      error.response?.status || error.message
+      status || message
     );
 
     return [];
