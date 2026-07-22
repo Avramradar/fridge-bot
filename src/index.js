@@ -1,316 +1,45 @@
 const TELEGRAM_API = "https://api.telegram.org";
 
-const RECIPES = [
+const RECIPE_SOURCES = [
   {
-    id: "potato_meat_casserole",
-    title: "Картофельная запеканка с фаршем",
-    time: "55 минут",
-    portions: "4 порции",
-    ingredients: [
-      "картофель",
-      "фарш",
-      "лук",
-      "сыр",
-      "помидоры"
-    ],
-    optional: ["сметана", "чеснок"],
-    steps: [
-      "Картофель очистите и нарежьте тонкими кружочками.",
-      "Лук измельчите и обжарьте вместе с фаршем 8–10 минут.",
-      "Выложите картофель, фарш и помидоры слоями.",
-      "Посыпьте тёртым сыром.",
-      "Запекайте при 190 °C около 40 минут."
-    ]
+    name: "RussianFood",
+    domain: "russianfood.com"
   },
   {
-    id: "fried_potatoes_meat",
-    title: "Жареная картошка с фаршем",
-    time: "35 минут",
-    portions: "3 порции",
-    ingredients: ["картофель", "фарш", "лук"],
-    optional: ["чеснок", "зелень"],
-    steps: [
-      "Картофель нарежьте небольшими кусочками.",
-      "Обжарьте фарш с луком.",
-      "Добавьте картофель и перемешайте.",
-      "Готовьте под крышкой около 20 минут.",
-      "Добавьте соль, специи и зелень."
-    ]
+    name: "Поварёнок",
+    domain: "povarenok.ru"
   },
   {
-    id: "meatballs",
-    title: "Домашние котлеты",
-    time: "40 минут",
-    portions: "4 порции",
-    ingredients: ["фарш", "лук", "яйца", "хлеб"],
-    optional: ["молоко", "чеснок"],
-    steps: [
-      "Хлеб замочите в молоке или воде.",
-      "Смешайте фарш, лук, яйцо и отжатый хлеб.",
-      "Добавьте соль и специи.",
-      "Сформируйте котлеты.",
-      "Обжарьте с двух сторон до готовности."
-    ]
+    name: "Аймкук",
+    domain: "iamcook.ru"
   },
   {
-    id: "pasta_meat",
-    title: "Макароны с фаршем по-домашнему",
-    time: "30 минут",
-    portions: "4 порции",
-    ingredients: ["макароны", "фарш", "лук"],
-    optional: ["помидоры", "сыр", "чеснок"],
-    steps: [
-      "Макароны отварите до готовности.",
-      "Фарш обжарьте с измельчённым луком.",
-      "При наличии добавьте помидоры или томатную пасту.",
-      "Смешайте фарш с макаронами.",
-      "Посыпьте сыром."
-    ]
+    name: "1000.menu",
+    domain: "1000.menu"
   },
   {
-    id: "chicken_potatoes",
-    title: "Курица с картофелем в духовке",
-    time: "60 минут",
-    portions: "4 порции",
-    ingredients: ["курица", "картофель", "лук"],
-    optional: ["чеснок", "сметана", "сыр"],
-    steps: [
-      "Картофель нарежьте крупными кусочками.",
-      "Курицу натрите солью и специями.",
-      "Добавьте нарезанный лук.",
-      "Выложите всё в форму.",
-      "Запекайте при 190 °C около 50 минут."
-    ]
+    name: "Едим Дома",
+    domain: "edimdoma.ru"
   },
   {
-    id: "chicken_rice",
-    title: "Рис с курицей",
-    time: "45 минут",
-    portions: "4 порции",
-    ingredients: ["курица", "рис", "лук", "морковь"],
-    optional: ["чеснок"],
-    steps: [
-      "Курицу нарежьте и слегка обжарьте.",
-      "Добавьте лук и морковь.",
-      "Всыпьте промытый рис.",
-      "Добавьте воду в пропорции примерно 1 к 2.",
-      "Готовьте под крышкой до мягкости риса."
-    ]
+    name: "Гастроном",
+    domain: "gastronom.ru"
   },
   {
-    id: "chicken_pasta",
-    title: "Макароны с курицей и сыром",
-    time: "30 минут",
-    portions: "3 порции",
-    ingredients: ["курица", "макароны", "сыр"],
-    optional: ["сливки", "лук", "чеснок"],
-    steps: [
-      "Макароны отварите.",
-      "Курицу нарежьте и обжарьте.",
-      "Добавьте сливки или немного воды.",
-      "Смешайте с макаронами.",
-      "Добавьте тёртый сыр."
-    ]
+    name: "Лайфхакер",
+    domain: "lifehacker.ru"
   },
   {
-    id: "omelette_cheese",
-    title: "Омлет с сыром",
-    time: "15 минут",
-    portions: "2 порции",
-    ingredients: ["яйца", "сыр"],
-    optional: ["молоко", "помидоры", "зелень"],
-    steps: [
-      "Яйца взбейте с солью.",
-      "При наличии добавьте немного молока.",
-      "Вылейте смесь на разогретую сковороду.",
-      "Добавьте сыр и помидоры.",
-      "Готовьте под крышкой 5–7 минут."
-    ]
+    name: "Меню недели",
+    domain: "menunedeli.ru"
   },
   {
-    id: "tomato_eggs",
-    title: "Яичница с помидорами",
-    time: "15 минут",
-    portions: "2 порции",
-    ingredients: ["яйца", "помидоры"],
-    optional: ["лук", "сыр", "зелень"],
-    steps: [
-      "Помидоры нарежьте и обжарьте 3–4 минуты.",
-      "При наличии добавьте лук.",
-      "Разбейте яйца на сковороду.",
-      "Посолите и добавьте специи.",
-      "Готовьте до желаемой степени прожарки."
-    ]
+    name: "Koolinar",
+    domain: "koolinar.ru"
   },
   {
-    id: "hot_sandwiches",
-    title: "Горячие бутерброды с сыром",
-    time: "15 минут",
-    portions: "2 порции",
-    ingredients: ["хлеб", "сыр"],
-    optional: ["колбаса", "помидоры", "ветчина"],
-    steps: [
-      "Хлеб выложите на противень.",
-      "Добавьте колбасу, ветчину или помидоры.",
-      "Посыпьте тёртым сыром.",
-      "Запекайте при 190 °C около 8–10 минут."
-    ]
-  },
-  {
-    id: "potato_pancakes",
-    title: "Картофельные драники",
-    time: "35 минут",
-    portions: "3 порции",
-    ingredients: ["картофель", "лук", "яйца", "мука"],
-    optional: ["сметана", "чеснок"],
-    steps: [
-      "Картофель и лук натрите на мелкой тёрке.",
-      "Добавьте яйцо и муку.",
-      "Посолите и перемешайте.",
-      "Выкладывайте массу ложкой на сковороду.",
-      "Обжарьте с двух сторон."
-    ]
-  },
-  {
-    id: "mashed_potatoes",
-    title: "Картофельное пюре",
-    time: "35 минут",
-    portions: "4 порции",
-    ingredients: ["картофель", "молоко", "масло"],
-    optional: ["сыр", "зелень"],
-    steps: [
-      "Картофель очистите и отварите.",
-      "Слейте воду.",
-      "Добавьте тёплое молоко и масло.",
-      "Разомните до однородности.",
-      "Добавьте соль."
-    ]
-  },
-  {
-    id: "vegetable_stew",
-    title: "Овощное рагу",
-    time: "45 минут",
-    portions: "4 порции",
-    ingredients: [
-      "картофель",
-      "кабачок",
-      "помидоры",
-      "лук",
-      "морковь"
-    ],
-    optional: ["перец", "чеснок", "капуста"],
-    steps: [
-      "Все овощи нарежьте кубиками.",
-      "Обжарьте лук и морковь.",
-      "Добавьте картофель и кабачок.",
-      "Добавьте помидоры и немного воды.",
-      "Тушите под крышкой около 30 минут."
-    ]
-  },
-  {
-    id: "rice_vegetables",
-    title: "Рис с овощами",
-    time: "35 минут",
-    portions: "3 порции",
-    ingredients: ["рис", "лук", "морковь"],
-    optional: ["перец", "кукуруза", "горошек"],
-    steps: [
-      "Рис промойте.",
-      "Лук и морковь обжарьте.",
-      "Добавьте остальные овощи.",
-      "Всыпьте рис и добавьте воду.",
-      "Готовьте под крышкой до готовности."
-    ]
-  },
-  {
-    id: "mushroom_potatoes",
-    title: "Жареная картошка с грибами",
-    time: "40 минут",
-    portions: "3 порции",
-    ingredients: ["картофель", "грибы", "лук"],
-    optional: ["сметана", "зелень"],
-    steps: [
-      "Картофель нарежьте ломтиками.",
-      "Грибы и лук обжарьте отдельно.",
-      "Картофель обжарьте до золотистой корочки.",
-      "Добавьте грибы и лук.",
-      "Готовьте вместе ещё 5–7 минут."
-    ]
-  },
-  {
-    id: "mushroom_pasta",
-    title: "Макароны с грибами",
-    time: "30 минут",
-    portions: "3 порции",
-    ingredients: ["макароны", "грибы", "лук"],
-    optional: ["сливки", "сыр", "чеснок"],
-    steps: [
-      "Макароны отварите.",
-      "Грибы обжарьте с луком.",
-      "Добавьте сливки или немного воды.",
-      "Смешайте с макаронами.",
-      "Добавьте сыр."
-    ]
-  },
-  {
-    id: "fish_potatoes",
-    title: "Рыба с картофелем в духовке",
-    time: "50 минут",
-    portions: "4 порции",
-    ingredients: ["рыба", "картофель", "лук"],
-    optional: ["сметана", "сыр", "лимон"],
-    steps: [
-      "Картофель нарежьте тонкими кружочками.",
-      "Рыбу посолите и добавьте специи.",
-      "Выложите картофель, лук и рыбу в форму.",
-      "При наличии смажьте сметаной.",
-      "Запекайте при 190 °C около 40 минут."
-    ]
-  },
-  {
-    id: "cabbage_stew",
-    title: "Тушёная капуста",
-    time: "45 минут",
-    portions: "4 порции",
-    ingredients: ["капуста", "лук", "морковь"],
-    optional: ["помидоры", "фарш", "сосиски"],
-    steps: [
-      "Капусту нашинкуйте.",
-      "Лук и морковь обжарьте.",
-      "Добавьте капусту.",
-      "Влейте немного воды.",
-      "Тушите под крышкой около 30 минут."
-    ]
-  },
-  {
-    id: "cheese_pasta",
-    title: "Макароны с сыром",
-    time: "20 минут",
-    portions: "2 порции",
-    ingredients: ["макароны", "сыр"],
-    optional: ["молоко", "масло", "сливки"],
-    steps: [
-      "Макароны отварите.",
-      "Слейте воду.",
-      "Добавьте масло или сливки.",
-      "Всыпьте тёртый сыр.",
-      "Перемешайте до расплавления сыра."
-    ]
-  },
-  {
-    id: "milk_pancakes",
-    title: "Домашние блины",
-    time: "35 минут",
-    portions: "4 порции",
-    ingredients: ["молоко", "яйца", "мука"],
-    optional: ["сахар", "масло"],
-    steps: [
-      "Яйца взбейте с солью и сахаром.",
-      "Добавьте молоко.",
-      "Постепенно вмешайте муку.",
-      "Добавьте немного масла.",
-      "Обжарьте тонкие блины с двух сторон."
-    ]
+    name: "Готовим дома",
+    domain: "gotovim-doma.ru"
   }
 ];
 
@@ -330,32 +59,47 @@ const INGREDIENT_ALIASES = {
 
   курицу: "курица",
   курицы: "курица",
-  грудка: "курица",
-  филе: "курица",
+  куриное: "курица",
+  грудка: "куриное филе",
+  грудку: "куриное филе",
 
   фарша: "фарш",
-  мяснойфарш: "фарш",
+  фаршем: "фарш",
 
   лука: "лук",
+  луком: "лук",
+
   моркови: "морковь",
+  морковкой: "морковь",
+
   сыра: "сыр",
+  сыром: "сыр",
 
   гриб: "грибы",
-  шампиньон: "грибы",
-  шампиньоны: "грибы",
+  грибов: "грибы",
+  шампиньон: "шампиньоны",
+  шампиньоны: "шампиньоны",
 
   макарон: "макароны",
+  макаронами: "макароны",
   спагетти: "макароны",
   паста: "макароны",
 
   капусты: "капуста",
-  кабачки: "кабачок",
+  капустой: "капуста",
 
-  рыбноефиле: "рыба",
+  кабачки: "кабачок",
+  кабачков: "кабачок",
+
   рыбу: "рыба",
+  рыбы: "рыба",
+  рыбноефиле: "рыбное филе",
 
   колбасу: "колбаса",
-  сосиска: "сосиски"
+  колбасы: "колбаса",
+
+  сосиска: "сосиски",
+  сосисок: "сосиски"
 };
 
 export default {
@@ -369,7 +113,18 @@ export default {
     if (url.pathname === "/webhook" && request.method === "POST") {
       try {
         const update = await request.json();
-        await handleUpdate(update, env);
+
+        /*
+         * Возвращаем Telegram ответ сразу,
+         * а обработку продолжаем в фоне.
+         */
+        const task = handleUpdate(update, env);
+
+        if (typeof globalThis.waitUntil === "function") {
+          globalThis.waitUntil(task);
+        } else {
+          await task;
+        }
       } catch (error) {
         console.error("Webhook error:", error);
       }
@@ -377,15 +132,27 @@ export default {
       return new Response("ok");
     }
 
-    return new Response("🥕 RadarFridge работает!", {
-      headers: {
-        "content-type": "text/plain; charset=UTF-8"
+    return new Response(
+      "🥕 RadarFridge работает. Поиск русскоязычных рецептов включён.",
+      {
+        headers: {
+          "content-type": "text/plain; charset=UTF-8"
+        }
       }
-    });
+    );
   }
 };
 
 async function setupWebhook(url, env) {
+  if (!env.BOT_TOKEN || !env.SETUP_SECRET) {
+    return new Response(
+      "Не настроены BOT_TOKEN или SETUP_SECRET",
+      {
+        status: 500
+      }
+    );
+  }
+
   if (url.searchParams.get("secret") !== env.SETUP_SECRET) {
     return new Response("Доступ запрещён", {
       status: 403
@@ -398,7 +165,8 @@ async function setupWebhook(url, env) {
     env.BOT_TOKEN,
     "setWebhook",
     {
-      url: webhookUrl
+      url: webhookUrl,
+      allowed_updates: ["message"]
     }
   );
 
@@ -422,12 +190,32 @@ async function handleUpdate(update, env) {
       [
         "🥕 Привет! Я RadarFridge.",
         "",
-        "Напиши продукты, которые у тебя есть, через запятую.",
+        "Напиши продукты, которые есть у тебя дома.",
         "",
         "Например:",
         "курица, картошка, сыр, лук, помидоры",
         "",
-        "Я сразу подберу от 3 до 5 рецептов на русском языке."
+        "Я найду в интернете 3–5 рецептов на русском языке."
+      ].join("\n")
+    );
+
+    return;
+  }
+
+  if (text === "/sources") {
+    const sourceNames = RECIPE_SOURCES
+      .map((source, index) => {
+        return `${index + 1}. ${source.name}`;
+      })
+      .join("\n");
+
+    await sendMessage(
+      env.BOT_TOKEN,
+      chatId,
+      [
+        "🌐 Источники рецептов:",
+        "",
+        sourceNames
       ].join("\n")
     );
 
@@ -438,45 +226,100 @@ async function handleUpdate(update, env) {
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      "Напиши продукты через запятую.\n\nНапример:\nфарш, картошка, сыр, лук"
+      [
+        "Напиши продукты через запятую.",
+        "",
+        "Например:",
+        "фарш, картошка, сыр, лук"
+      ].join("\n")
     );
 
     return;
   }
 
-  const userIngredients = parseIngredients(text);
+  const ingredients = parseIngredients(text);
 
-  if (userIngredients.length === 0) {
+  if (ingredients.length === 0) {
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      "Не получилось распознать продукты. Напиши их через запятую."
+      "Не удалось распознать продукты. Напиши их через запятую."
     );
 
     return;
   }
 
-  const recipes = findBestRecipes(userIngredients);
+  await sendChatAction(
+    env.BOT_TOKEN,
+    chatId,
+    "typing"
+  );
 
-  await sendMessage(
+  const searchMessage = await sendMessage(
     env.BOT_TOKEN,
     chatId,
     [
-      `🍽 Нашёл ${recipes.length} подходящих рецептов`,
+      "🔎 Ищу рецепты в русскоязычных источниках...",
       "",
-      `🥕 Твои продукты: ${userIngredients.join(", ")}`,
-      "",
-      "Лучшие варианты 👇"
+      `🥕 Продукты: ${ingredients.join(", ")}`
     ].join("\n")
   );
 
-  for (let index = 0; index < recipes.length; index++) {
-    const recipe = recipes[index];
+  try {
+    const recipes = await searchRussianRecipes(ingredients);
+
+    if (recipes.length === 0) {
+      await sendMessage(
+        env.BOT_TOKEN,
+        chatId,
+        buildFallbackMessage(ingredients)
+      );
+
+      return;
+    }
 
     await sendMessage(
       env.BOT_TOKEN,
       chatId,
-      buildRecipeMessage(recipe, index + 1)
+      [
+        `🍽 Найдено рецептов: ${recipes.length}`,
+        "",
+        `🥕 По продуктам: ${ingredients.join(", ")}`,
+        "",
+        "Лучшие варианты 👇"
+      ].join("\n")
+    );
+
+    for (let index = 0; index < recipes.length; index++) {
+      const recipe = recipes[index];
+
+      await sendRecipe(
+        env.BOT_TOKEN,
+        chatId,
+        recipe,
+        index + 1,
+        ingredients
+      );
+
+      /*
+       * Небольшая задержка, чтобы Telegram
+       * не отклонил сообщения из-за частоты.
+       */
+      await sleep(250);
+    }
+  } catch (error) {
+    console.error("Search error:", error);
+
+    await sendMessage(
+      env.BOT_TOKEN,
+      chatId,
+      [
+        "⚠️ Сейчас интернет-поиск не ответил.",
+        "",
+        "Попробуй ещё раз через несколько секунд.",
+        "",
+        buildFallbackMessage(ingredients)
+      ].join("\n")
     );
   }
 }
@@ -486,26 +329,33 @@ function parseIngredients(text) {
     .toLowerCase()
     .replace(/ё/g, "е")
     .replace(
-      /у меня есть|в холодильнике есть|в холодильнике|что приготовить из|приготовить из|осталось|остались|есть/gi,
+      /у меня есть|в холодильнике есть|в холодильнике|что приготовить из|приготовить из|что можно приготовить|осталось|остались|продукты|есть/gi,
       ""
     )
     .replace(/[.;\n/|]+/g, ",");
 
-  return [
-    ...new Set(
-      cleaned
-        .split(",")
-        .map((item) => normalizeIngredient(item))
-        .filter(Boolean)
-    )
-  ].slice(0, 15);
+  const parts = cleaned
+    .split(",")
+    .flatMap((part) => {
+      /*
+       * Если пользователь написал продукты
+       * через пробелы без запятых, сохраняем
+       * фразу целиком, а не разбиваем мясное
+       * или составное название.
+       */
+      return [part];
+    })
+    .map(normalizeIngredient)
+    .filter(Boolean);
+
+  return [...new Set(parts)].slice(0, 12);
 }
 
 function normalizeIngredient(value) {
   const cleaned = value
     .trim()
     .replace(
-      /^(немного|один|одна|одно|два|две|кусок|пачка|банка)\s+/,
+      /^(немного|один|одна|одно|два|две|три|кусок|кусочка|пачка|банка|бутылка|килограмм|грамм)\s+/,
       ""
     )
     .replace(/\s+/g, " ");
@@ -519,105 +369,544 @@ function normalizeIngredient(value) {
   );
 }
 
-function findBestRecipes(userIngredients) {
-  const rankedRecipes = RECIPES.map((recipe) => {
-    const matchedIngredients = recipe.ingredients.filter(
-      (ingredient) =>
-        userIngredients.some((userIngredient) =>
-          ingredientsMatch(userIngredient, ingredient)
-        )
-    );
+async function searchRussianRecipes(ingredients) {
+  const ingredientText = ingredients.join(" ");
 
-    const matchedOptional = recipe.optional.filter(
-      (ingredient) =>
-        userIngredients.some((userIngredient) =>
-          ingredientsMatch(userIngredient, ingredient)
-        )
-    );
+  /*
+   * Запрашиваем несколько вариантов поиска.
+   * Каждый запрос ограничен русскоязычными
+   * кулинарными сайтами.
+   */
+  const queries = [
+    buildSearchQuery(ingredientText, [
+      "russianfood.com",
+      "povarenok.ru",
+      "iamcook.ru"
+    ]),
+    buildSearchQuery(ingredientText, [
+      "1000.menu",
+      "edimdoma.ru",
+      "gastronom.ru"
+    ]),
+    buildSearchQuery(ingredientText, [
+      "menunedeli.ru",
+      "koolinar.ru",
+      "gotovim-doma.ru",
+      "lifehacker.ru"
+    ])
+  ];
 
-    const missingIngredients = recipe.ingredients.filter(
-      (ingredient) =>
-        !matchedIngredients.includes(ingredient)
-    );
+  const responses = await Promise.allSettled(
+    queries.map((query) => searchDuckDuckGo(query))
+  );
 
-    const matchRatio =
-      matchedIngredients.length / recipe.ingredients.length;
+  const allResults = [];
 
-    const score =
-      matchedIngredients.length * 20 +
-      matchedOptional.length * 5 +
-      matchRatio * 20 -
-      missingIngredients.length * 7;
-
-    return {
-      ...recipe,
-      matchedIngredients,
-      matchedOptional,
-      missingIngredients,
-      score
-    };
-  });
-
-  let results = rankedRecipes
-    .filter((recipe) => recipe.matchedIngredients.length > 0)
-    .sort((a, b) => b.score - a.score);
-
-  if (results.length >= 5) {
-    return results.slice(0, 5);
+  for (const response of responses) {
+    if (response.status === "fulfilled") {
+      allResults.push(...response.value);
+    }
   }
 
-  if (results.length >= 3) {
-    return results;
-  }
+  const filtered = allResults
+    .filter((item) => isAllowedRecipeUrl(item.url))
+    .filter((item) => isProbablyRecipe(item))
+    .map((item) => {
+      const source = getSourceByUrl(item.url);
+      const score = calculateResultScore(
+        item,
+        ingredients,
+        source
+      );
 
-  return rankedRecipes
+      return {
+        ...item,
+        source: source?.name || getHostname(item.url),
+        score
+      };
+    });
+
+  const unique = removeDuplicates(filtered);
+
+  return unique
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, 5);
 }
 
-function ingredientsMatch(userIngredient, recipeIngredient) {
-  const user = userIngredient.toLowerCase();
-  const recipe = recipeIngredient.toLowerCase();
+function buildSearchQuery(ingredientText, domains) {
+  const sites = domains
+    .map((domain) => `site:${domain}`)
+    .join(" OR ");
 
-  return (
-    user === recipe ||
-    user.includes(recipe) ||
-    recipe.includes(user)
+  return [
+    `"рецепт"`,
+    ingredientText,
+    `(${sites})`,
+    "-видео",
+    "-форум"
+  ].join(" ");
+}
+
+async function searchDuckDuckGo(query) {
+  const url =
+    "https://html.duckduckgo.com/html/?" +
+    new URLSearchParams({
+      q: query,
+      kl: "ru-ru"
+    }).toString();
+
+  const response = await fetchWithTimeout(
+    url,
+    {
+      method: "GET",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/131 Safari/537.36",
+        "accept":
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "accept-language": "ru-RU,ru;q=0.9"
+      }
+    },
+    9000
+  );
+
+  if (!response.ok) {
+    console.error(
+      "Search HTTP error:",
+      response.status
+    );
+
+    return [];
+  }
+
+  const html = await response.text();
+
+  return parseDuckDuckGoResults(html);
+}
+
+function parseDuckDuckGoResults(html) {
+  const results = [];
+
+  /*
+   * Получаем блоки поисковой выдачи.
+   * Используются несколько шаблонов,
+   * чтобы код переживал небольшие
+   * изменения разметки.
+   */
+  const blockRegex =
+    /<div[^>]+class="[^"]*result[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi;
+
+  let blockMatch;
+
+  while (
+    (blockMatch = blockRegex.exec(html)) !== null &&
+    results.length < 15
+  ) {
+    const block = blockMatch[1];
+
+    const linkMatch =
+      block.match(
+        /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
+      ) ||
+      block.match(
+        /<a[^>]+href="([^"]+)"[^>]+class="[^"]*result__a[^"]*"[^>]*>([\s\S]*?)<\/a>/i
+      );
+
+    if (!linkMatch) {
+      continue;
+    }
+
+    const rawUrl = decodeHtml(linkMatch[1]);
+    const url = extractRealUrl(rawUrl);
+    const title = cleanHtml(linkMatch[2]);
+
+    const snippetMatch =
+      block.match(
+        /class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/(?:a|div)>/i
+      );
+
+    const snippet = snippetMatch
+      ? cleanHtml(snippetMatch[1])
+      : "";
+
+    if (!url || !title) {
+      continue;
+    }
+
+    results.push({
+      title,
+      url,
+      snippet
+    });
+  }
+
+  /*
+   * Запасной парсер — если основной шаблон
+   * не нашёл результаты.
+   */
+  if (results.length === 0) {
+    const linkRegex =
+      /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+
+    let match;
+
+    while (
+      (match = linkRegex.exec(html)) !== null &&
+      results.length < 15
+    ) {
+      const url = extractRealUrl(
+        decodeHtml(match[1])
+      );
+
+      const title = cleanHtml(match[2]);
+
+      if (url && title) {
+        results.push({
+          title,
+          url,
+          snippet: ""
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+function extractRealUrl(rawUrl) {
+  try {
+    if (rawUrl.startsWith("//")) {
+      rawUrl = `https:${rawUrl}`;
+    }
+
+    const parsed = new URL(
+      rawUrl,
+      "https://duckduckgo.com"
+    );
+
+    const redirectUrl =
+      parsed.searchParams.get("uddg");
+
+    if (redirectUrl) {
+      return decodeURIComponent(redirectUrl);
+    }
+
+    if (
+      parsed.hostname.includes("duckduckgo.com")
+    ) {
+      return "";
+    }
+
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function isAllowedRecipeUrl(url) {
+  try {
+    const hostname = new URL(url)
+      .hostname
+      .replace(/^www\./, "");
+
+    return RECIPE_SOURCES.some((source) => {
+      return (
+        hostname === source.domain ||
+        hostname.endsWith(`.${source.domain}`)
+      );
+    });
+  } catch {
+    return false;
+  }
+}
+
+function isProbablyRecipe(item) {
+  const combined =
+    `${item.title} ${item.snippet} ${item.url}`
+      .toLowerCase();
+
+  const badWords = [
+    "форум",
+    "профиль",
+    "автор",
+    "каталог ингредиентов",
+    "статья",
+    "новости",
+    "правила сайта",
+    "регистрация",
+    "поиск рецептов"
+  ];
+
+  if (
+    badWords.some((word) => combined.includes(word))
+  ) {
+    return false;
+  }
+
+  const goodWords = [
+    "рецепт",
+    "приготов",
+    "ингредиент",
+    "блюдо",
+    "кухн",
+    "/recipe",
+    "/recipes",
+    "/cooking",
+    "/showrecipe"
+  ];
+
+  return goodWords.some((word) =>
+    combined.includes(word)
   );
 }
 
-function buildRecipeMessage(recipe, number) {
-  const availableText =
-    recipe.matchedIngredients.length > 0
-      ? recipe.matchedIngredients.join(", ")
-      : "нет точных совпадений";
+function calculateResultScore(
+  item,
+  ingredients,
+  source
+) {
+  const text =
+    `${item.title} ${item.snippet}`
+      .toLowerCase()
+      .replace(/ё/g, "е");
 
-  const missingText =
-    recipe.missingIngredients.length > 0
-      ? recipe.missingIngredients.join(", ")
-      : "ничего — все основные продукты есть";
+  let score = 0;
 
-  const optionalText =
-    recipe.optional.length > 0
-      ? recipe.optional.join(", ")
-      : "не требуются";
+  for (const ingredient of ingredients) {
+    const normalized = ingredient
+      .toLowerCase()
+      .replace(/ё/g, "е");
 
-  const stepsText = recipe.steps
-    .map((step, index) => `${index + 1}. ${step}`)
+    if (text.includes(normalized)) {
+      score += 20;
+    } else {
+      const root = normalized.slice(
+        0,
+        Math.max(4, normalized.length - 2)
+      );
+
+      if (
+        root.length >= 4 &&
+        text.includes(root)
+      ) {
+        score += 10;
+      }
+    }
+  }
+
+  if (text.includes("рецепт")) {
+    score += 8;
+  }
+
+  if (text.includes("пошагов")) {
+    score += 5;
+  }
+
+  if (text.includes("фото")) {
+    score += 4;
+  }
+
+  /*
+   * Небольшой приоритет крупным
+   * специализированным каталогам.
+   */
+  const sourceBonus = {
+    "RussianFood": 8,
+    "Поварёнок": 8,
+    "Аймкук": 8,
+    "1000.menu": 7,
+    "Едим Дома": 6,
+    "Гастроном": 6,
+    "Меню недели": 5,
+    "Koolinar": 5,
+    "Готовим дома": 5,
+    "Лайфхакер": 3
+  };
+
+  score += sourceBonus[source?.name] || 0;
+
+  return score;
+}
+
+function removeDuplicates(items) {
+  const seenUrls = new Set();
+  const seenTitles = new Set();
+  const result = [];
+
+  for (const item of items) {
+    const normalizedUrl = normalizeUrl(item.url);
+    const normalizedTitle = item.title
+      .toLowerCase()
+      .replace(/[^а-яa-z0-9]+/gi, " ")
+      .trim();
+
+    if (
+      seenUrls.has(normalizedUrl) ||
+      seenTitles.has(normalizedTitle)
+    ) {
+      continue;
+    }
+
+    seenUrls.add(normalizedUrl);
+    seenTitles.add(normalizedTitle);
+    result.push(item);
+  }
+
+  return result;
+}
+
+function normalizeUrl(value) {
+  try {
+    const url = new URL(value);
+
+    url.hash = "";
+
+    const removableParams = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "from",
+      "ref"
+    ];
+
+    for (const parameter of removableParams) {
+      url.searchParams.delete(parameter);
+    }
+
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return value;
+  }
+}
+
+function getSourceByUrl(url) {
+  try {
+    const hostname = new URL(url)
+      .hostname
+      .replace(/^www\./, "");
+
+    return RECIPE_SOURCES.find((source) => {
+      return (
+        hostname === source.domain ||
+        hostname.endsWith(`.${source.domain}`)
+      );
+    });
+  } catch {
+    return null;
+  }
+}
+
+function getHostname(url) {
+  try {
+    return new URL(url)
+      .hostname
+      .replace(/^www\./, "");
+  } catch {
+    return "Источник";
+  }
+}
+
+async function sendRecipe(
+  botToken,
+  chatId,
+  recipe,
+  number,
+  ingredients
+) {
+  const matched = ingredients.filter((ingredient) => {
+    const text =
+      `${recipe.title} ${recipe.snippet}`
+        .toLowerCase()
+        .replace(/ё/g, "е");
+
+    const normalized = ingredient
+      .toLowerCase()
+      .replace(/ё/g, "е");
+
+    const root = normalized.slice(
+      0,
+      Math.max(4, normalized.length - 2)
+    );
+
+    return (
+      text.includes(normalized) ||
+      (
+        root.length >= 4 &&
+        text.includes(root)
+      )
+    );
+  });
+
+  const matchText =
+    matched.length > 0
+      ? matched.join(", ")
+      : "совпадение по запросу";
+
+  const snippet = limitText(
+    recipe.snippet ||
+      "Открой рецепт, чтобы посмотреть ингредиенты и пошаговое приготовление.",
+    500
+  );
+
+  const message = [
+    `${number}️⃣ ${escapeHtml(recipe.title)}`,
+    "",
+    `🌐 Источник: ${escapeHtml(recipe.source)}`,
+    `🥕 Совпало: ${escapeHtml(matchText)}`,
+    "",
+    escapeHtml(snippet),
+    "",
+    `🔗 <a href="${escapeHtmlAttribute(recipe.url)}">Открыть полный рецепт</a>`
+  ].join("\n");
+
+  await telegramApi(
+    botToken,
+    "sendMessage",
+    {
+      chat_id: chatId,
+      text: message,
+      parse_mode: "HTML",
+      disable_web_page_preview: false,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🍽 Открыть рецепт",
+              url: recipe.url
+            }
+          ]
+        ]
+      }
+    }
+  );
+}
+
+function buildFallbackMessage(ingredients) {
+  const query = encodeURIComponent(
+    `${ingredients.join(" ")} рецепт`
+  );
+
+  const links = RECIPE_SOURCES
+    .slice(0, 5)
+    .map((source) => {
+      const url =
+        `https://www.google.com/search?q=` +
+        encodeURIComponent(
+          `site:${source.domain} ${ingredients.join(" ")} рецепт`
+        );
+
+      return `• <a href="${url}">${escapeHtml(source.name)}</a>`;
+    })
     .join("\n");
 
   return [
-    `${number}️⃣ ${recipe.title}`,
+    "Подходящие рецепты пока не удалось собрать автоматически.",
     "",
-    `⏱ Время: ${recipe.time}`,
-    `🍽 Количество: ${recipe.portions}`,
+    "Можно открыть готовый поиск по источникам:",
     "",
-    `✅ Уже есть: ${availableText}`,
-    `🛒 Не хватает: ${missingText}`,
-    `➕ По желанию: ${optionalText}`,
-    "",
-    "👨‍🍳 Приготовление:",
-    stepsText
+    links
   ].join("\n");
 }
 
@@ -628,28 +917,136 @@ async function sendMessage(botToken, chatId, text) {
     {
       chat_id: chatId,
       text,
+      parse_mode: text.includes("<a href=")
+        ? "HTML"
+        : undefined,
       disable_web_page_preview: true
     }
   );
 }
 
-async function telegramApi(botToken, method, payload) {
-  const response = await fetch(
+async function sendChatAction(
+  botToken,
+  chatId,
+  action
+) {
+  return telegramApi(
+    botToken,
+    "sendChatAction",
+    {
+      chat_id: chatId,
+      action
+    }
+  );
+}
+
+async function telegramApi(
+  botToken,
+  method,
+  payload
+) {
+  const response = await fetchWithTimeout(
     `${TELEGRAM_API}/bot${botToken}/${method}`,
     {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
-      body: JSON.stringify(payload)
-    }
+      body: JSON.stringify(
+        removeUndefinedValues(payload)
+      )
+    },
+    10000
   );
 
   const result = await response.json();
 
   if (!result.ok) {
-    console.error("Telegram API error:", result);
+    console.error(
+      "Telegram API error:",
+      JSON.stringify(result)
+    );
   }
 
   return result;
+}
+
+function removeUndefinedValues(object) {
+  return Object.fromEntries(
+    Object.entries(object).filter(
+      ([, value]) => value !== undefined
+    )
+  );
+}
+
+async function fetchWithTimeout(
+  url,
+  options,
+  timeoutMilliseconds
+) {
+  const controller = new AbortController();
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMilliseconds);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function cleanHtml(value) {
+  return decodeHtml(
+    value
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+function decodeHtml(value) {
+  return String(value)
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#x2F;/gi, "/")
+    .replace(/&#x3D;/gi, "=");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function escapeHtmlAttribute(value) {
+  return escapeHtml(value)
+    .replace(/'/g, "&#39;");
+}
+
+function limitText(value, maximumLength) {
+  const text = String(value || "").trim();
+
+  if (text.length <= maximumLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maximumLength - 1).trim()}…`;
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
