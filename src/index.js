@@ -174,7 +174,10 @@ async function setupWebhook(url, env) {
 }
 
 async function handleUpdate(update, env) {
-  const message = update?.message;
+  const message =
+  update?.message ||
+  update?.channel_post ||
+  update?.edited_channel_post;
 
   if (!message?.chat?.id) {
     return;
